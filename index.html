@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Etch — You're not forgetful. You never learned it.</title>
+    <meta name="description"
+        content="Etch makes learning stick—then builds on what you know. AI-powered flashcards and insights for your first brain.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #FAFAFA;
+            --text-main: #121212;
+            --text-muted: #666666;
+            --accent-glow: rgba(0, 122, 255, 0.15);
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+            --card-hover-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+            --border-color: rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
+        }
+
+        @keyframes glowPulse {
+            0% {
+                opacity: 0.5;
+                transform: scale(0.95);
+            }
+
+            50% {
+                opacity: 0.8;
+                transform: scale(1.05);
+            }
+
+            100% {
+                opacity: 0.5;
+                transform: scale(0.95);
+            }
+        }
+
+        .animate-in {
+            animation: fadeIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            opacity: 0;
+        }
+
+        .delay-100 {
+            animation-delay: 0.1s;
+        }
+
+        .delay-200 {
+            animation-delay: 0.2s;
+        }
+
+        .delay-300 {
+            animation-delay: 0.3s;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Ambient Background */
+        .ambient-glow {
+            position: fixed;
+            top: -10%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120vw;
+            height: 100vh;
+            background: radial-gradient(circle at 50% 0%, var(--accent-glow) 0%, transparent 60%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Nav */
+        /* Nav */
+        nav {
+            position: fixed;
+            top: 20px;
+            left: 0;
+            right: 0;
+            width: 90%;
+            max-width: 1400px;
+            /* Wider to spread content */
+            margin: 0 auto;
+            /* Robust centering */
+            z-index: 100;
+            padding: 12px 24px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 99px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+            box-sizing: border-box;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-main);
+        }
+
+        .logo img {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+        }
+
+        .logo span {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .nav-cta {
+            padding: 10px 24px;
+            background: #1a1a1a;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 99px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Hero */
+        .hero {
+            padding: 180px 24px 100px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            color: #1a1a1a;
+        }
+
+        .hero h1 .faded-text {
+            background: linear-gradient(90deg, #1a1a1a 0%, rgba(26, 26, 26, 0.2) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero h1 em {
+            font-family: 'Instrument Serif', serif;
+            font-style: italic;
+            font-weight: 400;
+            background: none;
+            -webkit-text-fill-color: #1a1a1a;
+        }
+
+        .hero .subhead {
+            font-size: 1.35rem;
+            color: var(--text-muted);
+            margin-bottom: 40px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-cta {
+            display: inline-block;
+            margin-bottom: 16px;
+            transition: transform 0.2s ease;
+        }
+
+        .hero-cta:hover {
+            transform: scale(1.02);
+        }
+
+        .hero-cta img {
+            height: 56px;
+        }
+
+        .hero-platforms {
+            font-size: 0.9rem;
+            color: #999;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+
+        .hero-image-wrapper {
+            margin-top: 80px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-image {
+            max-width: 340px;
+            /* Slightly larger */
+            width: 100%;
+            filter: drop-shadow(0 20px 50px rgba(0, 0, 0, 0.12));
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .hero-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(0, 122, 255, 0.2) 0%, transparent 70%);
+            filter: blur(40px);
+            z-index: -1;
+            animation: glowPulse 4s ease-in-out infinite;
+        }
+
+        /* Section Styling */
+        .section-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-label {
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            color: #007AFF;
+            /* Apple Blue */
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+        }
+
+        /* Value Props (Cards) */
+        .value-props {
+            padding: 40px 24px 100px;
+        }
+
+        .value-props-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .card {
+            background: #fff;
+            padding: 32px;
+            border-radius: 24px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--card-hover-shadow);
+        }
+
+        .card h3 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .card p {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+        }
+
+        /* Features (Bento Gridish) */
+        .features {
+            padding: 100px 24px;
+            background: #fff;
+            position: relative;
+        }
+
+        /* Gradient mask for smooth transition */
+        .features::before {
+            content: '';
+            position: absolute;
+            top: -100px;
+            left: 0;
+            width: 100%;
+            height: 100px;
+            background: linear-gradient(to top, #fff, transparent);
+        }
+
+        .feature-block {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+            max-width: 1000px;
+            margin: 0 auto 120px;
+        }
+
+        .feature-block:last-child {
+            margin-bottom: 0;
+        }
+
+        .feature-block.reverse {
+            direction: rtl;
+        }
+
+        .feature-block.reverse>* {
+            direction: ltr;
+        }
+
+        .feature-text h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-bottom: 20px;
+            line-height: 1.1;
+        }
+
+        .feature-text p {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .feature-visual {
+            position: relative;
+            display: flex;
+            justify-content: center;
+        }
+
+        .feature-visual::after {
+            display: none;
+        }
+
+        .feature-visual img {
+            width: 100%;
+            max-width: 320px;
+            filter: drop-shadow(0 12px 32px rgba(0, 0, 0, 0.1));
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Dark CTA Section */
+        .cta-section {
+            padding: 120px 24px;
+            text-align: center;
+            background: #111;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 100%, #2a2a2a 0%, #111 60%);
+        }
+
+        .cta-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .cta-section h2 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            letter-spacing: -0.04em;
+            margin-bottom: 40px;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 20px 48px;
+            background: #fff;
+            color: #000;
+            text-decoration: none;
+            border-radius: 99px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: all 0.2s;
+        }
+
+        .cta-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+        }
+
+        .cta-button svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* Footer */
+        footer {
+            padding: 60px 24px;
+            background: #fff;
+            border-top: 1px solid #f0f0f0;
+            text-align: center;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 32px;
+        }
+
+        .footer-links a {
+            color: #666;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.1s;
+        }
+
+        .footer-links a:hover {
+            color: #000;
+        }
+
+        .footer-copyright {
+            font-size: 0.9rem;
+            color: #999;
+        }
+
+        /* Responsive */
+        @media (max-width: 860px) {
+            .value-props-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .feature-block {
+                grid-template-columns: 1fr;
+                text-align: center;
+                gap: 40px;
+            }
+
+            .feature-block.reverse {
+                direction: ltr;
+                /* Reset direction */
+            }
+
+            .feature-visual {
+                order: -1;
+            }
+
+            .feature-visual::after {
+                display: none;
+                /* Hide accent blocks on mobile for cleaner look */
+            }
+
+            .cta-section h2 {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="ambient-glow"></div>
+
+    <nav class="animate-in">
+        <a href="#" class="logo">
+            <img src="assets/icon_light.png" alt="Etch">
+            <span>etch</span>
+        </a>
+        <a href="https://apps.apple.com/us/app/etch-memory/id6741780207" class="nav-cta">Download</a>
+    </nav>
+
+    <section class="hero">
+        <div class="container">
+            <h1 class="animate-in delay-100">You're not <span class="faded-text">forgetful.</span><br><em>You never
+                    learned it.</em></h1>
+            <p class="subhead animate-in delay-200">Stop collecting information. Start remembering it.</p>
+
+            <a href="https://apps.apple.com/us/app/etch-memory/id6741780207" class="hero-cta animate-in delay-300">
+                <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83"
+                    alt="Download on the App Store">
+            </a>
+
+            <div class="hero-image-wrapper animate-in delay-300">
+                <div class="hero-glow"></div>
+                <img src="assets/home.png" alt="Etch UI" class="hero-image">
+            </div>
+        </div>
+    </section>
+
+    <section class="value-props">
+        <div class="container">
+            <div class="value-props-grid">
+                <div class="card">
+                    <h3>Learn, don't just read</h3>
+                    <p>Etch quizzes you right before you forget. The struggle is the point.</p>
+                </div>
+                <div class="card">
+                    <h3>Train your first brain</h3>
+                    <p>Etch builds understanding, not storage. It uses what you've learned to surface connections and
+                        insights.</p>
+                </div>
+                <div class="card">
+                    <h3>Knowledge at a glance</h3>
+                    <p>Widgets on your home screen. Review in a swipe. No app to open.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="features">
+        <div class="container">
+
+            <div class="feature-block">
+                <div class="feature-text">
+                    <span class="section-label">Connections</span>
+                    <h2>Connect the dots</h2>
+                    <p>Etch reads your flashcards and writes short, personalized insights that connect ideas you've
+                        already learned.</p>
+                </div>
+                <div class="feature-visual">
+                    <img src="assets/insights.png" alt="AI insights">
+                </div>
+            </div>
+
+            <div class="feature-block reverse">
+                <div class="feature-text">
+                    <span class="section-label">Creation</span>
+                    <h2>Turn anything into memory</h2>
+                    <p>Chat about any topic. Upload PDFs, photos, or just ask. Etch generates flashcards so you actually
+                        remember it.</p>
+                </div>
+                <div class="feature-visual left-accent">
+                    <img src="assets/chat.png" alt="AI tutor">
+                </div>
+            </div>
+
+            <div class="feature-block">
+                <div class="feature-text">
+                    <span class="section-label">Habit</span>
+                    <h2>Recall without friction</h2>
+                    <p>Review from your home screen. No context switch. Just recall, respond, and move on.</p>
+                </div>
+                <div class="feature-visual">
+                    <img src="assets/widget.png" alt="Widgets">
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <section class="cta-section">
+        <div class="cta-content">
+            <h2>Make memory a choice.</h2>
+            <a href="https://apps.apple.com/us/app/etch-memory/id6741780207" class="cta-button">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+                </svg>
+                Download for Free
+            </a>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="privacy.html">Privacy</a>
+                <a href="terms.html">Terms</a>
+                <a href="mailto:tyler@mgtechworks.com">Contact</a>
+            </div>
+            <p class="footer-copyright">©2025 M&G Techworks</p>
+        </div>
+    </footer>
+</body>
+
+</html>
